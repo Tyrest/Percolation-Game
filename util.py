@@ -4,6 +4,7 @@ import copy
 import traceback
 import sys
 import TyBot
+import time
 
 class Vertex:
     def __init__(self, index, color=-1):
@@ -131,24 +132,25 @@ def BinomialRandomGraph(k, p):
 # This method creates and plays a number of random graphs using both passed in players.
 def PlayBenchmark(p1, p2, iters):
     graphs = (
-        # BinomialRandomGraph(random.randint(1, 20), random.random())
-        BinomialRandomGraph(10, random.random())
+        BinomialRandomGraph(random.randint(2, 20), random.random())
+        # BinomialRandomGraph(10, random.random())
         for _ in range(iters)
     )
     wins = [0, 0]
+    start_time = time.time()
+    print("Opp Delta\tV and E Length\tTime For Game")
     for graph in graphs:
         g1 = copy.deepcopy(graph)
         g2 = copy.deepcopy(graph)
+        t0 = time.time()
+        p2_wins = wins[1]
         # Each player gets a chance to go first on each graph.
         winner_a = PlayGraph(p1, p2, g1)
         wins[winner_a] += 1
-
-        # print("Switch\n")
-
         winner_b = PlayGraph(p2, p1, g2)
         wins[1-winner_b] += 1
-        print(wins)
-        # print(str(wins) + "\n\n" + "-" * 40 + "\n")
+        print("{0}\t\t{1}, {2}\t\t{3}".format(wins[1] - p2_wins, len(graph.V), len(graph.E), round(time.time() - t0, 3)))
+    print("Average Time: {0}".format(round(time.time() - start_time / iters, 3)))
     return wins
 
 

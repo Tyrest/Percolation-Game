@@ -1,5 +1,6 @@
 import random
 import util
+import copy
 
 class Graph:
     def __init__(self, v, e, dictIn=None):
@@ -47,35 +48,32 @@ class PercolationPlayer:
     # Should return a vertex `v` from graph.V where v.color == -1
     @staticmethod
     def ChooseVertexToColor(graph, player):
-        return random.choice([v for v in graph.V if v.color == -1])
+        opgraph = Graph(graph.V, graph.E)
+        return [x for x in list(sorted(opgraph.dict, key=lambda x : len(opgraph.dict[x]), reverse=True)) if x.color == -1][0]
+        # return random.choice([v for v in graph.V if v.color == -1])
+
 
     # `graph` is an instance of a Graph, `player` is an integer (0 or 1).
     # Should return a vertex `v` from graph.V where v.color == player
     @staticmethod
     def ChooseVertexToRemove(graph, player):
+        # return random.choice([v for v in graph.V if v.color == player])
         opGraph = Graph(graph.V, graph.E)
-        move = PercolationPlayer.MinimaxP2(opGraph, 3, True, player)[1]
-        # move = PercolationPlayer.MinimaxP2(graph, 3, True, player)[1]
-        return move
+        return PercolationPlayer.MinimaxP2(opGraph, 64//len(graph.V), True, player)[1]
     
     @staticmethod
     def MinimaxP2(graph, depth, maximizing, player):
-        playerValidMoves = [v for v in graph.V if v.color == player]
-        if depth == 0:
-            return PercolationPlayer.EvaluationP2(graph, player), None
+        # Check if the current node is a terminal node
+        terminal = PercolationPlayer.IsTerminal(graph, depth, maximizing, player)
+        if terminal != None:
+            return terminal
         
-        if len(playerValidMoves) == 0:
-            if len(graph.V) == 0:
-                return (-10e6, None) if maximizing else (10e6, None)
-            else:
-                return (-10e6, None)
-            
+        # Minimax Algorithm
         if maximizing:
             value = -10e7
+            playerValidMoves = [v for v in graph.V if v.color == player]
             bestMove = None
             for moveIndex in range(len(playerValidMoves)):
-                # tempGraph = util.Graph(graph.V, graph.E)
-                # tempGraph = Graph(graph.V, graph.E, dictIn=graph.dict)
                 tempGraph = Graph(graph.V, graph.E)
                 validMoves = sorted([v for v in tempGraph.V if v.color == player], key=lambda x : x.index)
                 tempGraph.Percolate(validMoves[moveIndex])
@@ -89,8 +87,6 @@ class PercolationPlayer:
             antiPlayerValidMoves = [v for v in graph.V if v.color != player]
             bestMove = None
             for moveIndex in range(len(antiPlayerValidMoves)):
-                # tempGraph = util.Graph(graph.V, graph.E)
-                # tempGraph = Graph(graph.V, graph.E, dictIn=graph.dict)
                 tempGraph = Graph(graph.V, graph.E)
                 validMoves = sorted([v for v in tempGraph.V if v.color != player], key=lambda x : x.index)
                 tempGraph.Percolate(validMoves[moveIndex])
@@ -100,9 +96,29 @@ class PercolationPlayer:
                     bestMove = validMoves[moveIndex]
             return value, bestMove
     
+    # Checks if the current node is terminal
+    # Will return None if not terminal
+    # Will return the (value, move) tuple if terminal
+    @staticmethod
+    def IsTerminal(graph, depth, maximizing, player):
+        validMoves = [v for v in graph.V if v.color == player]
+        if depth == 0:
+            return PercolationPlayer.EvaluationP2(graph, player), None
+        
+        if len(validMoves) == 0:
+            if len(graph.V) == 0:
+                return (-10e6, None) if maximizing else (10e6, None)
+            else:
+                return (-10e6, None)
+        
+        return None
+
     @staticmethod
     def EvaluationP2(graph, player):
-        return len([v for v in graph.V if v.color == player]) - len([v for v in graph.V if v.color != player])
+        playerScore = sum([len(graph.dict[v]) for v in graph.V if v.color == player])
+        antiPlayerScore = sum([len(graph.dict[v]) for v in graph.V if v.color != player])
+        return playerScore - antiPlayerScore
+        # return len([v for v in graph.V if v.color == player]) - len([v for v in graph.V if v.color != player])
 
 # Feel free to put any personal driver code here.
 def main():
