@@ -4,6 +4,7 @@ import copy
 import traceback
 import sys
 import TyBot
+import TyBot2
 import time
 
 class Vertex:
@@ -133,7 +134,7 @@ def BinomialRandomGraph(k, p):
 def PlayBenchmark(p1, p2, iters):
     graphs = (
         BinomialRandomGraph(random.randint(2, 20), random.random())
-        # BinomialRandomGraph(10, random.random())
+        # BinomialRandomGraph(2, random.random())
         for _ in range(iters)
     )
     wins = [0, 0]
@@ -149,8 +150,10 @@ def PlayBenchmark(p1, p2, iters):
         wins[winner_a] += 1
         winner_b = PlayGraph(p2, p1, g2)
         wins[1-winner_b] += 1
+        if wins[1] - p2_wins == 2:
+            print(graph)
         print("{0}\t\t{1}, {2}\t\t{3}".format(wins[1] - p2_wins, len(graph.V), len(graph.E), round(time.time() - t0, 3)))
-    print("Average Time: {0}".format(round(time.time() - start_time / iters, 3)))
+    print("Average Time: {0}".format(round((time.time() - start_time) / iters, 3)))
     return wins
 
 
