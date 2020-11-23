@@ -6,6 +6,7 @@ import sys
 import TyBot
 import TyBot2
 import time
+# import PercolationGUI
 
 class Vertex:
     def __init__(self, index, color=-1):
@@ -59,6 +60,7 @@ class Graph:
         to_remove = {u for u in self.V if len(self.IncidentEdges(u)) == 0}
         self.V.difference_update(to_remove)
 
+# gui = PercolationGUI.GUI()
 
 # This is the main game loop.
 def PlayGraph(s, t, graph):
@@ -86,9 +88,9 @@ def PlayGraph(s, t, graph):
         except Exception as e:
             traceback.print_exc(file=sys.stdout)
             return 1 - active_player
-
         # Swap current player.
         active_player = 1 - active_player
+        # gui.DrawGraph(graph, active_player)
 
     # Check that all vertices are colored now.
     assert all(v.color != -1 for v in graph.V)
@@ -117,6 +119,7 @@ def PlayGraph(s, t, graph):
             return 1 - active_player
         # Swap current player
         active_player = 1 - active_player
+        # gui.DrawGraph(graph, active_player)
 
     # Winner is the non-active player.
     return 1 - active_player
@@ -146,12 +149,14 @@ def PlayBenchmark(p1, p2, iters):
         t0 = time.time()
         p2_wins = wins[1]
         # Each player gets a chance to go first on each graph.
+        # gui.NewGame(g1, 0)
         winner_a = PlayGraph(p1, p2, g1)
         wins[winner_a] += 1
+        # gui.NewGame(g2, 1)
         winner_b = PlayGraph(p2, p1, g2)
         wins[1-winner_b] += 1
-        if wins[1] - p2_wins == 2:
-            print(graph)
+        # if wins[1] - p2_wins == 2:
+        #     print(graph)
         print("{0}\t\t{1}, {2}\t\t{3}".format(wins[1] - p2_wins, len(graph.V), len(graph.E), round(time.time() - t0, 3)))
     print("Average Time: {0}".format(round((time.time() - start_time) / iters, 3)))
     return wins
@@ -172,7 +177,7 @@ class RandomPlayer:
 if __name__ == "__main__":
     # NOTE: we are not creating INSTANCES of these classes, we're defining the players
     # as the class itself. This lets us call the static methods.
-    p1 = TyBot.PercolationPlayer
+    p1 = TyBot2.PercolationPlayer
     p2 = RandomPlayer
     iters = 200
     wins = PlayBenchmark(p1, p2, iters)
