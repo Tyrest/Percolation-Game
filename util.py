@@ -6,7 +6,7 @@ import sys
 import TyBot
 import TyBot2
 import time
-# import PercolationGUI
+import SarahBot
 
 class Vertex:
     def __init__(self, index, color=-1):
@@ -48,6 +48,15 @@ class Graph:
     def IncidentEdges(self, v):
         return [e for e in self.E if (e.a == v or e.b == v)]
 
+    # Returns the degree of the given vertex.
+    def Degree(self, v):
+        return len(self.IncidentEdges(v))
+
+    # Returns all neighbors of the given vertex.
+    def GetNeighbors(self, v):
+        edges = self.IncidentEdges(v)
+        return [u for u in self.V if Edge(u, v) in edges or Edge(v, u) in edges]
+
     # Removes the given vertex v from the graph, as well as the edges attached to it.
     # Removes all isolated vertices from the graph as well.
     def Percolate(self, v):
@@ -60,7 +69,10 @@ class Graph:
         to_remove = {u for u in self.V if len(self.IncidentEdges(u)) == 0}
         self.V.difference_update(to_remove)
 
-# gui = PercolationGUI.GUI()
+gui_enabled = False
+if gui_enabled:
+    import PercolationGUI
+    gui = PercolationGUI.GUI()
 
 # This is the main game loop.
 def PlayGraph(s, t, graph):
@@ -90,7 +102,8 @@ def PlayGraph(s, t, graph):
             return 1 - active_player
         # Swap current player.
         active_player = 1 - active_player
-        # gui.DrawGraph(graph, active_player)
+        if gui_enabled:
+            gui.DrawGraph(graph, active_player)
 
     # Check that all vertices are colored now.
     assert all(v.color != -1 for v in graph.V)
@@ -119,7 +132,8 @@ def PlayGraph(s, t, graph):
             return 1 - active_player
         # Swap current player
         active_player = 1 - active_player
-        # gui.DrawGraph(graph, active_player)
+        if gui_enabled:
+            gui.DrawGraph(graph, active_player)
 
     # Winner is the non-active player.
     return 1 - active_player
@@ -135,32 +149,45 @@ def BinomialRandomGraph(k, p):
 
 # This method creates and plays a number of random graphs using both passed in players.
 def PlayBenchmark(p1, p2, iters):
+    global gui_enabled
+    gui_enabled = False
     graphs = (
         BinomialRandomGraph(random.randint(2, 20), random.random())
-        # BinomialRandomGraph(2, random.random())
+        # BinomialRandomGraph(4, random.random())
         for _ in range(iters)
     )
     wins = [0, 0]
     start_time = time.time()
     print("Opp Delta\tV and E Length\tTime For Game")
     for graph in graphs:
-        g1 = copy.deepcopy(graph)
-        g2 = copy.deepcopy(graph)
-        t0 = time.time()
         p2_wins = wins[1]
-        # Each player gets a chance to go first on each graph.
-        # gui.NewGame(g1, 0)
-        winner_a = PlayGraph(p1, p2, g1)
-        wins[winner_a] += 1
-        # gui.NewGame(g2, 1)
-        winner_b = PlayGraph(p2, p1, g2)
-        wins[1-winner_b] += 1
+        wins = PlayGame(graph, p1, p2, wins, p2_wins)
         # if wins[1] - p2_wins == 2:
-        #     print(graph)
-        print("{0}\t\t{1}, {2}\t\t{3}".format(wins[1] - p2_wins, len(graph.V), len(graph.E), round(time.time() - t0, 3)))
+        #     gui_enabled = True
+        #     PlayGame(graph, p1, p2, wins, p2_wins)
+        #     gui_enabled = False
     print("Average Time: {0}".format(round((time.time() - start_time) / iters, 3)))
     return wins
 
+def PlayGame(graph, p1, p2, wins, p2_wins):
+    g1 = copy.deepcopy(graph)
+    g2 = copy.deepcopy(graph)
+    t0 = time.time()
+    # Each player gets a chance to go first on each graph.
+    if gui_enabled:
+        gui.NewGame(g1, 0)
+    winner_a = PlayGraph(p1, p2, g1)
+    wins[winner_a] += 1
+    # print("s")
+    if gui_enabled:
+        gui.NewGame(g2, 1)
+    winner_b = PlayGraph(p2, p1, g2)
+    wins[1-winner_b] += 1
+    windiff = wins[1] - p2_wins
+    if windiff == 0:
+        windiff = "-"
+    print("{0}\t\t{1}, {2}\t\t{3}".format(windiff, len(graph.V), len(graph.E), round(time.time() - t0, 3)))
+    return wins
 
 # This is a player that plays a legal move at random.
 class RandomPlayer:
@@ -177,8 +204,8 @@ class RandomPlayer:
 if __name__ == "__main__":
     # NOTE: we are not creating INSTANCES of these classes, we're defining the players
     # as the class itself. This lets us call the static methods.
-    p1 = TyBot2.PercolationPlayer
-    p2 = RandomPlayer
+    p1 = RandomPlayer
+    p2 = SarahBot.ooshbot69
     iters = 200
     wins = PlayBenchmark(p1, p2, iters)
     print(wins)

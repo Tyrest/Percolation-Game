@@ -28,10 +28,25 @@ class PercolationPlayer:
     # Should return a vertex `v` from graph.V where v.color == -1
     @staticmethod
     def ChooseVertexToColor(graph, player):
+        # return random.choice([v for v in graph.V if v.color == -1])
         opgraph = Graph(PercolationPlayer.SetsToDict(graph))
-        vertexHeuristic = lambda x : len(opgraph.dict[x])
-        return [x for x in list(sorted(opgraph.dict, key=vertexHeuristic, reverse=True)) if x.color == -1][0]
+        uncoloredVertices = [v for v in opgraph.dict if v.color == -1]
+        move = uncoloredVertices[0]
+        value = -10e4
+        for v in uncoloredVertices:
+            aPV = [x for x in opgraph.dict[v] if v.color == player]
+            aEV = [x for x in opgraph.dict[v] if v.color == 1 - player]
+            hValue = PercolationPlayer.VertexHeuristic(v, opgraph, player, aPV, aEV)
+            if hValue > value:
+                move = v
+                value = hValue
+        return move
 
+    @staticmethod
+    def VertexHeuristic(x, graph, player, aPV, aEV):
+        # Degree of the vertex
+        score = len(graph.dict[x])
+        return score
 
     # `graph` is an instance of a Graph, `player` is an integer (0 or 1).
     # Should return a vertex `v` from graph.V where v.color == player
@@ -39,23 +54,11 @@ class PercolationPlayer:
     def ChooseVertexToRemove(graph, player):
         # return random.choice([v for v in graph.V if v.color == player])
         opGraph = Graph(PercolationPlayer.SetsToDict(graph))
-        # quickMove = PercolationPlayer.QuickMove(opGraph, player)
-        # if quickMove != None:
-        #     return quickMove
-        return PercolationPlayer.MinimaxP2(opGraph, 84//len(graph.V), True, player)[1]
-    
-    @staticmethod
-    def QuickMove(graph, player):
-        isoVertices = [v for v in graph.dict if len(graph.dict[v]) == 0\
-                                            and v.color == player]
-        if len(isoVertices) > 0:
-            return isoVertices[0]
-        pairs = [v for v in graph.dict if len(graph.dict[v]) == 1\
-                                      and v.color == player\
-                                      and next(iter(graph.dict[v])).color != player]
-        if len(pairs) > 0:
-            return pairs[0]
-        return None
+        depth = 64//len(graph.V)
+        if len(graph.V) < 12:
+            depth = 12
+        value, move = PercolationPlayer.MinimaxP2(opGraph, depth, True, player)
+        return move
 
     @staticmethod
     def SetsToDict(graph):
@@ -108,20 +111,23 @@ class PercolationPlayer:
     def IsTerminal(graph, depth, maximizing, player):
         if depth == 0:
             return PercolationPlayer.EvaluationP2(graph, player), None
-        if len([v for v in graph.dict if v.color == player]) == 0:
-            if len(graph.dict) == 0:
-                return (-10e6, None) if maximizing else (10e6, None)
-            else:
-                return (-10e6, None)
+        elif len(graph.dict) == 0:
+            return (-10e6, None) if maximizing else (10e6, None)
+        elif len([v for v in graph.dict if v.color == player]) == 0:
+            return (-10e6, None)
+        elif len([v for v in graph.dict if v.color != player]) == 0:
+            return (10e6, next(iter(graph.dict)))
         
         return None
 
     @staticmethod
     def EvaluationP2(graph, player):
-        playerScore = len([v for v in graph.dict if v.color == player])
-        # playerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color == player])
-        # antiPlayerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color != player])
-        return playerScore# - antiPlayerScore
+        # playerScore = len([v for v in graph.dict if v.color == player])
+        playerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color == player]) -\
+                      2 * len([v for v in graph.dict if v.color == player])
+        antiPlayerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color != player]) -\
+                          2 * len([v for v in graph.dict if v.color != player])
+        return playerScore - antiPlayerScore
 
 # Feel free to put any personal driver code here.
 def main():
