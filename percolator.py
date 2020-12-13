@@ -1,6 +1,4 @@
 import random
-import util
-import copy
 
 class Graph:
     def __init__(self, vDict):
@@ -22,6 +20,9 @@ class Graph:
         to_remove = {u for u in self.dict if len(self.dict[u]) == 0}
         for isoVertex in to_remove:
             del self.dict[isoVertex]
+    
+    def NumEdges(self):
+        return sum([len(self.dict[x]) for x in self.dict]) / 2
 
 class PercolationPlayer:
 	# `graph` is an instance of a Graph, `player` is an integer (0 or 1).
@@ -34,18 +35,21 @@ class PercolationPlayer:
         move = uncoloredVertices[0]
         value = -10e4
         for v in uncoloredVertices:
-            aPV = [x for x in opgraph.dict[v] if v.color == player]
-            aEV = [x for x in opgraph.dict[v] if v.color == 1 - player]
-            hValue = PercolationPlayer.VertexHeuristic(v, opgraph, player, aPV, aEV)
+            hValue = PercolationPlayer.VertexHeuristic(v, opgraph, player)
             if hValue > value:
                 move = v
                 value = hValue
         return move
 
     @staticmethod
-    def VertexHeuristic(x, graph, player, aPV, aEV):
+    def VertexHeuristic(x, graph, player):
+        lenV = len(graph.dict) / 2
         # Degree of the vertex
         score = len(graph.dict[x])
+        if all(map(lambda v : True if v.color != player else False, graph.dict[x])):
+            score += lenV + 2
+        if not all(map(lambda v : True if len(graph.dict[v]) != 1 else False, graph.dict[x])):
+            score += lenV
         return score
 
     # `graph` is an instance of a Graph, `player` is an integer (0 or 1).
@@ -54,9 +58,9 @@ class PercolationPlayer:
     def ChooseVertexToRemove(graph, player):
         # return random.choice([v for v in graph.V if v.color == player])
         opGraph = Graph(PercolationPlayer.SetsToDict(graph))
-        depth = 64//len(graph.V)
-        if len(graph.V) < 12:
-            depth = 12
+        depth = 72//len(graph.V)
+        if len(graph.V) < 10:
+            depth = 10
         value, move = PercolationPlayer.MinimaxP2(opGraph, depth, True, player)
         return move
 
@@ -109,24 +113,25 @@ class PercolationPlayer:
     # Will return the (value, move) tuple if terminal
     @staticmethod
     def IsTerminal(graph, depth, maximizing, player):
-        if depth == 0:
-            return PercolationPlayer.EvaluationP2(graph, player), None
-        elif len(graph.dict) == 0:
+        if len(graph.dict) == 0:
             return (-10e6, None) if maximizing else (10e6, None)
         elif len([v for v in graph.dict if v.color == player]) == 0:
             return (-10e6, None)
         elif len([v for v in graph.dict if v.color != player]) == 0:
             return (10e6, next(iter(graph.dict)))
+        elif depth == 0:
+            return PercolationPlayer.EvaluationP2(graph, player), None
         
         return None
 
     @staticmethod
     def EvaluationP2(graph, player):
         # playerScore = len([v for v in graph.dict if v.color == player])
-        playerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color == player]) -\
-                      2 * len([v for v in graph.dict if v.color == player])
-        antiPlayerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color != player]) -\
-                          2 * len([v for v in graph.dict if v.color != player])
+        lenV = 1
+        playerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color == player]) +\
+                      lenV * len([v for v in graph.dict if v.color == player])
+        antiPlayerScore = sum([len(graph.dict[v]) for v in graph.dict if v.color != player]) +\
+                          lenV * len([v for v in graph.dict if v.color != player])
         return playerScore - antiPlayerScore
 
 # Feel free to put any personal driver code here.
